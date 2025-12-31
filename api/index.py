@@ -16,41 +16,48 @@ if project_root_str not in sys.path:
 # Set PYTHONPATH environment variable
 os.environ['PYTHONPATH'] = project_root_str
 
-# CRITICAL: Try to import FastAPI first
-# If this fails, dependencies aren't installed
+# Import FastAPI - this MUST work or nothing will work
 try:
     from fastapi import FastAPI
-    FASTAPI_AVAILABLE = True
 except ImportError as e:
-    FASTAPI_AVAILABLE = False
-    FASTAPI_ERROR = str(e)
-    print("=" * 80)
-    print("CRITICAL ERROR: FastAPI is not installed!")
-    print("=" * 80)
-    print(f"Error: {e}")
-    print("\nThis means Vercel did not install dependencies from api/requirements.txt")
-    print("\nSOLUTION:")
-    print("1. Go to Vercel Dashboard → Settings → General")
-    print("2. Set 'Install Command' to: pip install -r api/requirements.txt")
-    print("3. Redeploy")
-    print("=" * 80)
-    # Raise the error so Vercel shows it
-    raise
+    # FastAPI is not available - this is a critical error
+    error_msg = f"""
+CRITICAL ERROR: FastAPI is not installed!
 
-# FastAPI is available, try to import the main app
+Error: {e}
+
+This means Vercel did not install dependencies from api/requirements.txt
+
+SOLUTION:
+1. Go to Vercel Dashboard → Settings → General
+2. Under "Build & Development Settings"
+3. Set "Install Command" to: pip install -r api/requirements.txt
+4. Save and redeploy
+
+Current PYTHONPATH: {os.environ.get('PYTHONPATH', 'NOT SET')}
+Project Root: {project_root_str}
+"""
+    print(error_msg)
+    # Create a simple error response that doesn't need FastAPI
+    # This will at least show something
+    raise ImportError(error_msg) from e
+
+# FastAPI is available, create app
+app = FastAPI(title="Polymarket Arbitrage Agent API")
+
+# Try to import the main app
 try:
-    from agents.arbitrage_agent.api_server import app
+    from agents.arbitrage_agent.api_server import app as main_app
+    # Use the main app
+    app = main_app
     __all__ = ["app"]
     
 except ImportError as e:
-    # Import failed - create error app
+    # Main app import failed - create error handler
     import traceback
     
-    app = FastAPI(title="Polymarket Arbitrage Agent - Import Error")
-    
-    # Print to logs
     print("=" * 80)
-    print("IMPORT ERROR")
+    print("IMPORT ERROR - Main App")
     print("=" * 80)
     traceback.print_exc()
     print(f"PYTHONPATH: {os.environ.get('PYTHONPATH', 'NOT SET')}")
@@ -66,8 +73,13 @@ except ImportError as e:
             "error_message": str(e),
             "pythonpath": os.environ.get('PYTHONPATH', 'not set'),
             "project_root": project_root_str,
-            "help": "Check Vercel function logs for full traceback"
+            "sys_path": sys.path[:5],
+            "help": "Check Vercel function logs for full traceback. Make sure PYTHONPATH=. is set in environment variables."
         }
+    
+    @app.get("/health")
+    async def health():
+        return {"status": "error", "message": "Main app failed to import"}
     
     @app.get("/{path:path}")
     async def error_catchall(path: str):
@@ -78,8 +90,6 @@ except ImportError as e:
 except Exception as e:
     # Any other error
     import traceback
-    
-    app = FastAPI(title="Polymarket Arbitrage Agent - Error")
     
     error_type = type(e).__name__
     error_message = str(e)
@@ -93,7 +103,7 @@ except Exception as e:
             "status": "error",
             "error_type": error_type,
             "error_message": error_message,
-            "help": "Check Vercel function logs"
+            "help": "Check Vercel function logs for full traceback"
         }
     
     @app.get("/{path:path}")
