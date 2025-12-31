@@ -1,11 +1,18 @@
+# Core FastAPI dependencies
 fastapi==0.111.0
 uvicorn[standard]==0.30.3
 pydantic==2.8.2
 python-dotenv==1.0.1
 httpx==0.27.0
 tenacity==8.5.0
+
+# Additional dependencies that might be needed
 starlette==0.37.2
 anyio==4.4.0
 sniffio==1.3.1
 idna==3.7
 typing-extensions==4.12.2
+
+# Dependencies for agents modules (minimal set)
+requests==2.32.3
+aiohttp==3.10.0
