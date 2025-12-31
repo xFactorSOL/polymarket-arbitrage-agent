@@ -1,0 +1,12 @@
+[project]
+name = "polymarket-arbitrage-agent"
+version = "1.0.0"
+description = "Polymarket Arbitrage Agent - Identifies and trades on near-resolved markets"
+requires-python = ">=3.9"
+dependencies = []
+
+[build-system]
+requires = ["setuptools", "wheel"]
+
+[tool.vercel]
+buildCommand = "pip install -r requirements.txt"
