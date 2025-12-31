@@ -3,6 +3,7 @@ Vercel entrypoint for Polymarket Arbitrage Agent API
 """
 import sys
 import os
+import json
 from pathlib import Path
 
 # Get the project root (parent of api directory)
@@ -17,7 +18,7 @@ if project_root_str not in sys.path:
 os.environ['PYTHONPATH'] = project_root_str
 
 # CRITICAL: Try to import FastAPI first
-# If this fails, we can't do anything - Vercel didn't install dependencies
+# If this fails, we create a minimal WSGI app that doesn't need FastAPI
 try:
     from fastapi import FastAPI
     FASTAPI_AVAILABLE = True
@@ -37,7 +38,7 @@ except ImportError as e:
     print("\nSOLUTION:")
     print("1. Go to Vercel Dashboard → Settings → General")
     print("2. Under 'Build & Development Settings'")
-    print("3. Set 'Install Command' to: pip install -r api/requirements.txt")
+    print("3. Set 'Install Command' to: pip install --upgrade pip && pip install -r api/requirements.txt")
     print("4. Save and redeploy")
     print("=" * 80)
     
@@ -49,12 +50,12 @@ except ImportError as e:
                 "status": "error",
                 "error_type": "DependenciesNotInstalled",
                 "error_message": "FastAPI is not installed. Dependencies were not installed during build.",
-                "solution": "Go to Vercel Dashboard → Settings → General → Set Install Command to: pip install -r api/requirements.txt",
+                "solution": "Go to Vercel Dashboard → Settings → General → Set Install Command to: pip install --upgrade pip && pip install -r api/requirements.txt",
                 "pythonpath": os.environ.get('PYTHONPATH', 'not set'),
-                "project_root": project_root_str
+                "project_root": project_root_str,
+                "help": "Check Vercel build logs. You should see 'Installing dependencies...' If not, the install command isn't running."
             }
             
-            import json
             response_body = json.dumps(error_response).encode('utf-8')
             status = '500 Internal Server Error'
             headers = [('Content-Type', 'application/json')]
@@ -64,8 +65,8 @@ except ImportError as e:
     app = MinimalErrorApp()
     __all__ = ["app"]
     
-    # Also raise the error so it shows in logs
-    raise ImportError(f"FastAPI not installed: {e}. Install dependencies with: pip install -r api/requirements.txt")
+    # Don't raise - let the WSGI app handle it
+    print("Using minimal error app - FastAPI not available")
 
 # FastAPI is available, try to import the main app
 if FASTAPI_AVAILABLE:
