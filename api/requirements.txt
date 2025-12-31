@@ -1,0 +1,8 @@
+# Dependencies for Vercel function
+# Vercel will automatically install these when it detects requirements.txt in the api/ directory
+fastapi==0.111.0
+uvicorn[standard]==0.30.3
+pydantic==2.8.2
+python-dotenv==1.0.1
+httpx==0.27.0
+tenacity==8.5.0
