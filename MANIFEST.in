@@ -1,0 +1,9 @@
+# Include necessary files
+include requirements.txt
+include README.md
+include LICENSE.md
+recursive-include agents *.py
+recursive-include agents *.html
+recursive-include agents *.md
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
